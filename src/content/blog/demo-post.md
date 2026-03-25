@@ -1,8 +1,8 @@
 ---
-title: 'Demo post'
-description: 'A placeholder post to prove the blog is wired up.'
-pubDate: 'Mar 25 2026'
-heroImage: './demo-post-hero.jpg'
+title: "Demo post"
+description: "A placeholder post to prove the blog is wired up."
+pubDate: "Mar 25 2026"
+heroImage: "./demo-post-hero.jpg"
 ---
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec elementum est sit amet nulla hendrerit, at scelerisque nulla varius. Vestibulum sed nunc tincidunt elit volutpat porta. Nam lacinia non tellus non sagittis. Mauris rutrum dolor id ante egestas, eget fermentum nisi semper. Duis enim tellus, egestas elementum leo vel, aliquam commodo lectus. Morbi fermentum ultricies cursus. Integer facilisis finibus eros et dapibus. Mauris et tristique risus. In quis quam quis augue facilisis sagittis vel at magna. Duis maximus purus sed urna auctor, quis ultricies massa consectetur. Ut rhoncus sapien eu diam consequat, et maximus ipsum varius. Sed sit amet ex elit. Aliquam auctor ac tellus ut tristique. Proin et posuere metus. Etiam interdum felis vel arcu tempus porta. Morbi placerat, nibh id semper egestas, nisi nisi bibendum elit, ac accumsan urna erat eget urna.
