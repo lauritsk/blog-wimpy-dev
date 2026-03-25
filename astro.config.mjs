@@ -1,15 +1,15 @@
 // @ts-check
 
-import mdx from '@astrojs/mdx';
-import sitemap from '@astrojs/sitemap';
-import { defineConfig } from 'astro/config';
+import mdx from "@astrojs/mdx";
+import sitemap from "@astrojs/sitemap";
+import { defineConfig } from "astro/config";
 
-import cloudflare from '@astrojs/cloudflare';
+import cloudflare from "@astrojs/cloudflare";
 
 export default defineConfig({
-  site: 'https://blog.wimpy.dev',
+  site: "https://blog.wimpy.dev",
   integrations: [mdx(), sitemap()],
   adapter: cloudflare({
-    imageService: 'compile',
+    imageService: "compile",
   }),
 });
