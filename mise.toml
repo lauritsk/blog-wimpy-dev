@@ -27,7 +27,7 @@ run = "vp check"
 
 [tasks.build]
 description = "Build project"
-run = "vp build"
+run = "vp run build"
 
 [tasks.secrets]
 description = "Scan project for secrets"
