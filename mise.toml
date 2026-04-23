@@ -1,42 +1,109 @@
 [tools]
+"aqua:gastownhall/beads" = "1.0.2"
 cocogitto = "7.0.0"
-gitleaks = "8.30.1"
+trivy = "0.70.0"
+shellcheck = "0.11.0"
+actionlint = "1.7.12"
+cosign = "3.0.6"
+syft = "1.43.0"
+goreleaser = "2.15.4"
 node = "25.9.0"
 pnpm = "10.33.1"
-viteplus = "0.1.19"
-wrangler = "4.84.1"
-
-[hooks]
-enter = { task = "setup" }
 
 [tasks.setup]
 description = "Install project dependencies"
-run = "vp install"
+depends = ["setup:pre-commit"]
+run = "pnpm install"
+
+[tasks."setup:pre-commit"]
+description = "Install git pre-commit hook"
+run = "mise generate git-pre-commit --write --task=pre-commit"
+
+[tasks."pre-commit"]
+description = "Run pre-commit checks"
+depends = ["fix:staged", "lint:actions", "lint:shell"]
+
+[tasks."fix:staged"]
+description = "Fix staged files via VitePlus"
+run = "pnpm exec vp check --fix . '!**/.wrangler/**'"
 
 [tasks.format]
-description = "Format project"
-run = "vp fmt"
+description = "Format project source files"
+run = "pnpm exec vp fmt . '!**/.wrangler/**'"
+
+[tasks."lint:format"]
+description = "Check project formatting"
+run = "pnpm exec vp fmt --check . '!**/.wrangler/**'"
+
+[tasks."lint:app"]
+description = "Lint project source files"
+run = "pnpm exec vp lint"
+
+[tasks."lint:actions"]
+description = "Lint GitHub Actions workflows"
+run = "actionlint"
+
+[tasks."lint:shell"]
+description = "Lint shell scripts"
+run = "files=$(find . -type f -name '*.sh' -not -path './.git/*' -not -path './node_modules/*' -not -path './vendor/*'); if [ -n \"$files\" ]; then printf '%s\\n' \"$files\" | while IFS= read -r file; do shellcheck \"$file\"; done; else echo 'skip: no shell scripts found'; fi"
 
 [tasks.lint]
-description = "Lint project"
-run = "vp lint"
+description = "Run all lint checks"
+depends = ["lint:format", "lint:app", "lint:actions", "lint:shell"]
 
 [tasks.typecheck]
 description = "Type-check project"
-run = "vp check"
+run = "pnpm exec vp check . '!**/.wrangler/**'"
+
+[tasks.test]
+description = "Run test suite"
+run = "printf 'skip: no project test suite configured\n'"
 
 [tasks.build]
 description = "Build project"
-run = "vp run build"
+run = "pnpm exec vp run build"
 
-[tasks.secrets]
-description = "Scan project for secrets"
-run = "gitleaks dir ."
+[tasks."audit:deps"]
+description = "Audit production dependencies"
+run = "pnpm audit --prod --audit-level high"
 
-[tasks.commits]
-description = "Enforce conventional commits"
-run = "cog check"
+[tasks."audit:trivy"]
+description = "Audit repository files with Trivy, including secrets"
+run = "trivy fs --scanners vuln,misconfig,secret --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 ."
+
+[tasks.audit]
+description = "Run all audit checks"
+depends = ["audit:deps", "audit:trivy"]
+
+[tasks.sbom]
+description = "Generate an SBOM for the repository"
+run = "output=${SBOM_OUTPUT:-sbom.syft.json}; syft dir:. -o syft-json=\"$output\" && printf 'wrote %s\\n' \"$output\""
+
+[tasks."check:commits"]
+description = "Check conventional commits for new commits"
+run = "head=$(git rev-parse HEAD); base=$(git merge-base HEAD origin/main 2>/dev/null || true); if [ -n \"$base\" ] && [ \"$base\" != \"$head\" ]; then cog check \"$base..$head\"; elif git rev-parse --verify HEAD~1 >/dev/null 2>&1; then cog check HEAD~1..HEAD; else echo 'skip: no commit range available'; fi"
+
+[tasks."release:version"]
+description = "Create the next version and tag"
+run = "cog bump --auto"
+
+[tasks."release:check"]
+description = "Validate GoReleaser configuration when present"
+run = "if [ -f .goreleaser.yaml ] || [ -f .goreleaser.yml ]; then goreleaser check; else echo 'skip: no goreleaser config'; fi"
+
+[tasks."release:verify"]
+description = "Run GoReleaser snapshot from a clean worktree when configured"
+run = "if [ -f .goreleaser.yaml ] || [ -f .goreleaser.yml ]; then tmp=$(mktemp -d) && trap 'git worktree remove --force \"$tmp\"' EXIT && git worktree add --quiet --detach \"$tmp\" HEAD && (cd \"$tmp\" && goreleaser release --snapshot --clean); else echo 'skip: no goreleaser config'; fi"
+
+[tasks."release:publish"]
+description = "Publish the current tagged release when configured"
+depends = ["check", "release:verify"]
+run = "if [ -f .goreleaser.yaml ] || [ -f .goreleaser.yml ]; then goreleaser release --clean; else echo 'skip: no goreleaser config'; fi"
+
+[tasks.release]
+description = "Publish the current tagged release"
+depends = ["release:publish"]
 
 [tasks.check]
 description = "Run project checks"
-depends = ["format", "lint", "typecheck", "build", "secrets", "commits"]
+depends = ["lint", "typecheck", "test", "build", "audit", "check:commits", "release:check"]
